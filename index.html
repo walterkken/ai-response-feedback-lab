@@ -542,6 +542,8 @@
         </div>
         <button id="saveButton" type="button">保存草稿</button>
         <button id="exportButton" type="button">下载 JSON</button>
+        <button id="importButton" type="button">导入 JSON</button>
+        <input id="importFileInput" type="file" accept="application/json,.json" hidden />
       </div>
     </header>
 
@@ -575,6 +577,16 @@
               <button id="sampleButton" type="button">载入示例</button>
               <button id="addSegmentButton" type="button">新增片段</button>
               <button id="clearButton" class="danger" type="button">清空</button>
+            </div>
+            <div class="field" style="margin-top: 14px">
+              <label for="historySelect">本机历史记录</label>
+              <div class="row">
+                <select id="historySelect">
+                  <option value="">暂无历史记录</option>
+                </select>
+                <button id="loadHistoryButton" type="button">载入历史</button>
+                <button id="deleteHistoryButton" class="danger" type="button">删除历史</button>
+              </div>
             </div>
             <p class="footer-note">数据默认只保存在本机浏览器 localStorage，不上传服务器。</p>
           </div>
@@ -649,6 +661,7 @@
 
     <script>
       const STORAGE_KEY = "ai-response-feedback-lab:v1";
+      const HISTORY_KEY = "ai-response-feedback-lab:history:v1";
 
       const sample = {
         prompt:
@@ -686,6 +699,11 @@
         copyJsonButton: document.querySelector("#copyJsonButton"),
         exportButton: document.querySelector("#exportButton"),
         saveButton: document.querySelector("#saveButton"),
+        importButton: document.querySelector("#importButton"),
+        importFileInput: document.querySelector("#importFileInput"),
+        historySelect: document.querySelector("#historySelect"),
+        loadHistoryButton: document.querySelector("#loadHistoryButton"),
+        deleteHistoryButton: document.querySelector("#deleteHistoryButton"),
         toast: document.querySelector("#toast"),
         metricTotal: document.querySelector("#metricTotal"),
         metricRated: document.querySelector("#metricRated"),
@@ -833,6 +851,157 @@
         };
       }
 
+      function currentRules() {
+        return {
+          keepGood: el.ruleKeepGood.checked,
+          improveOk: el.ruleImproveOk.checked,
+          replaceBad: el.ruleReplaceBad.checked,
+          askIfNeeded: el.ruleAskIfNeeded.checked
+        };
+      }
+
+      function stateToDraft() {
+        return {
+          schema: "ai_response_segment_feedback.draft.v1",
+          saved_at: new Date().toISOString(),
+          prompt: state.prompt,
+          answer: state.answer,
+          source_answer: state.answer,
+          splitMode: state.splitMode,
+          split_mode: state.splitMode,
+          segments: state.segments.map((segment, index) => ({
+            id: segment.id || uid(),
+            index: index + 1,
+            text: segment.text || "",
+            rating: segment.rating || "unrated",
+            note: segment.note || ""
+          })),
+          rules: currentRules()
+        };
+      }
+
+      function applyDraft(draft) {
+        const sourceAnswer = draft.source_answer ?? draft.answer ?? "";
+        state.prompt = draft.prompt || "";
+        state.answer = sourceAnswer;
+        state.splitMode = draft.split_mode || draft.splitMode || "paragraph";
+        state.segments = Array.isArray(draft.segments)
+          ? draft.segments.map((segment) => ({
+              id: segment.id || uid(),
+              text: segment.text || "",
+              rating: ["good", "ok", "bad", "unrated"].includes(segment.rating)
+                ? segment.rating
+                : "unrated",
+              note: segment.note || ""
+            }))
+          : [];
+
+        el.promptInput.value = state.prompt;
+        el.answerInput.value = state.answer;
+        el.splitMode.value = state.splitMode;
+
+        if (draft.rules) {
+          el.ruleKeepGood.checked = draft.rules.keepGood !== false;
+          el.ruleImproveOk.checked = draft.rules.improveOk !== false;
+          el.ruleReplaceBad.checked = draft.rules.replaceBad !== false;
+          el.ruleAskIfNeeded.checked = Boolean(draft.rules.askIfNeeded);
+        }
+      }
+
+      function historyTitle(draft) {
+        const base = (draft.prompt || draft.source_answer || draft.answer || "未命名反馈")
+          .replace(/\s+/g, " ")
+          .trim();
+        return base.length > 42 ? `${base.slice(0, 42)}...` : base;
+      }
+
+      function loadHistoryItems() {
+        try {
+          const raw = localStorage.getItem(HISTORY_KEY);
+          const items = raw ? JSON.parse(raw) : [];
+          return Array.isArray(items) ? items : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function saveHistoryItems(items) {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(items.slice(0, 30)));
+      }
+
+      function renderHistory() {
+        const selected = el.historySelect.value;
+        const items = loadHistoryItems();
+        el.historySelect.innerHTML = "";
+        if (!items.length) {
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = "暂无历史记录";
+          el.historySelect.append(option);
+          return;
+        }
+        items.forEach((item) => {
+          const option = document.createElement("option");
+          option.value = item.id;
+          const day = new Date(item.saved_at).toLocaleString("zh-CN", {
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+          });
+          option.textContent = `${day} · ${item.title}`;
+          el.historySelect.append(option);
+        });
+        if (selected && items.some((item) => item.id === selected)) {
+          el.historySelect.value = selected;
+        }
+      }
+
+      function saveCurrentToHistory() {
+        syncInputsToState();
+        const draft = stateToDraft();
+        if (!draft.prompt.trim() && !draft.source_answer.trim() && !draft.segments.length) {
+          showToast("没有可保存的内容");
+          return;
+        }
+        const item = {
+          id: uid(),
+          saved_at: draft.saved_at,
+          title: historyTitle(draft),
+          draft
+        };
+        const items = loadHistoryItems();
+        saveHistoryItems([item, ...items]);
+        saveSilent();
+        renderHistory();
+        el.historySelect.value = item.id;
+        showToast("已保存到本机历史记录");
+      }
+
+      function loadSelectedHistory() {
+        const id = el.historySelect.value;
+        const item = loadHistoryItems().find((entry) => entry.id === id);
+        if (!item) {
+          showToast("没有选中的历史记录");
+          return;
+        }
+        applyDraft(item.draft);
+        update();
+        showToast("历史记录已载入");
+      }
+
+      function deleteSelectedHistory() {
+        const id = el.historySelect.value;
+        if (!id) {
+          showToast("没有选中的历史记录");
+          return;
+        }
+        const items = loadHistoryItems().filter((entry) => entry.id !== id);
+        saveHistoryItems(items);
+        renderHistory();
+        showToast("历史记录已删除");
+      }
+
       function renderMetrics() {
         const c = counts();
         const total = Math.max(c.total, 1);
@@ -962,19 +1131,7 @@
       }
 
       function saveSilent() {
-        const payload = {
-          prompt: state.prompt,
-          answer: state.answer,
-          splitMode: state.splitMode,
-          segments: state.segments,
-          rules: {
-            keepGood: el.ruleKeepGood.checked,
-            improveOk: el.ruleImproveOk.checked,
-            replaceBad: el.ruleReplaceBad.checked,
-            askIfNeeded: el.ruleAskIfNeeded.checked
-          }
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToDraft()));
       }
 
       function loadSaved() {
@@ -982,19 +1139,7 @@
         if (!raw) return false;
         try {
           const saved = JSON.parse(raw);
-          state.prompt = saved.prompt || "";
-          state.answer = saved.answer || "";
-          state.splitMode = saved.splitMode || "paragraph";
-          state.segments = Array.isArray(saved.segments) ? saved.segments : [];
-          el.promptInput.value = state.prompt;
-          el.answerInput.value = state.answer;
-          el.splitMode.value = state.splitMode;
-          if (saved.rules) {
-            el.ruleKeepGood.checked = saved.rules.keepGood !== false;
-            el.ruleImproveOk.checked = saved.rules.improveOk !== false;
-            el.ruleReplaceBad.checked = saved.rules.replaceBad !== false;
-            el.ruleAskIfNeeded.checked = Boolean(saved.rules.askIfNeeded);
-          }
+          applyDraft(saved);
           return true;
         } catch {
           return false;
@@ -1042,6 +1187,28 @@
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
+      }
+
+      function importJsonFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.addEventListener("load", () => {
+          try {
+            const payload = JSON.parse(String(reader.result || "{}"));
+            applyDraft(payload);
+            update();
+            showToast("JSON 已导入");
+          } catch {
+            showToast("导入失败：不是有效 JSON");
+          } finally {
+            el.importFileInput.value = "";
+          }
+        });
+        reader.addEventListener("error", () => {
+          showToast("导入失败：无法读取文件");
+          el.importFileInput.value = "";
+        });
+        reader.readAsText(file);
       }
 
       el.promptInput.addEventListener("input", update);
@@ -1119,13 +1286,20 @@
       });
 
       el.exportButton.addEventListener("click", downloadJson);
-      el.saveButton.addEventListener("click", () => {
-        syncInputsToState();
-        saveSilent();
-        showToast("草稿已保存到本机浏览器");
+      el.importButton.addEventListener("click", () => {
+        el.importFileInput.click();
       });
+      el.importFileInput.addEventListener("change", () => {
+        importJsonFile(el.importFileInput.files[0]);
+      });
+      el.saveButton.addEventListener("click", () => {
+        saveCurrentToHistory();
+      });
+      el.loadHistoryButton.addEventListener("click", loadSelectedHistory);
+      el.deleteHistoryButton.addEventListener("click", deleteSelectedHistory);
 
       loadSaved();
+      renderHistory();
       update();
     </script>
   </body>

@@ -41,7 +41,8 @@ The current version is a static web app:
 - add notes for each segment,
 - generate a revision prompt,
 - export structured JSON,
-- store drafts locally in browser localStorage.
+- import structured JSON,
+- store drafts and named history locally in browser localStorage.
 
 No backend is required. No API key is required.
 
@@ -99,7 +100,6 @@ The exported JSON uses this rough schema:
 
 Short-term:
 
-- add import JSON,
 - add keyboard shortcuts,
 - add side-by-side original and revised answers,
 - add browser extension mode for ChatGPT / Claude / Gemini pages,
