@@ -1,0 +1,1132 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Response Feedback Lab</title>
+    <link rel="icon" href="data:," />
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #15181c;
+        --muted: #5b6470;
+        --line: #d9dee5;
+        --paper: #f6f7f4;
+        --panel: #ffffff;
+        --blue: #1f5f8f;
+        --green: #28724f;
+        --amber: #9b6a16;
+        --red: #9c3d35;
+        --focus: #235bd8;
+        --soft-blue: #e9f1f7;
+        --soft-green: #eaf5ef;
+        --soft-amber: #f7f0df;
+        --soft-red: #f8e9e7;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--paper);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+          sans-serif;
+        line-height: 1.5;
+      }
+
+      button,
+      textarea,
+      select,
+      input {
+        font: inherit;
+      }
+
+      button {
+        min-height: 36px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--panel);
+        color: var(--ink);
+        cursor: pointer;
+      }
+
+      button:hover {
+        border-color: #aab4bf;
+        background: #f9fafb;
+      }
+
+      button.primary {
+        border-color: var(--blue);
+        background: var(--blue);
+        color: #fff;
+        font-weight: 700;
+      }
+
+      button.danger {
+        border-color: #d7aba6;
+        color: var(--red);
+      }
+
+      button:focus-visible,
+      textarea:focus-visible,
+      select:focus-visible,
+      input:focus-visible {
+        outline: 3px solid var(--focus);
+        outline-offset: 2px;
+      }
+
+      textarea,
+      select,
+      input {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #fff;
+        color: var(--ink);
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 120px;
+        padding: 12px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 7px;
+        font-weight: 700;
+      }
+
+      .skip-link {
+        position: absolute;
+        left: 16px;
+        top: -80px;
+        z-index: 100;
+        padding: 10px 14px;
+        background: var(--ink);
+        color: #fff;
+      }
+
+      .skip-link:focus {
+        top: 12px;
+      }
+
+      .app-header {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 14px clamp(16px, 4vw, 40px);
+        border-bottom: 1px solid var(--line);
+        background: rgba(246, 247, 244, 0.95);
+        backdrop-filter: blur(14px);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 240px;
+      }
+
+      .brand-mark {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border: 2px solid var(--ink);
+        font-weight: 800;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: 19px;
+        line-height: 1.2;
+        letter-spacing: 0;
+      }
+
+      .brand p {
+        margin: 2px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .metric-strip {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .metric {
+        min-width: 86px;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--panel);
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .metric strong {
+        display: block;
+        font-size: 18px;
+        line-height: 1.1;
+      }
+
+      main {
+        padding: 18px clamp(16px, 4vw, 40px) 34px;
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: minmax(300px, 0.85fr) minmax(360px, 1.15fr) minmax(320px, 0.95fr);
+        gap: 14px;
+        align-items: start;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        min-width: 0;
+      }
+
+      .panel-header {
+        padding: 16px 16px 12px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .panel-header h2 {
+        margin: 0;
+        font-size: 18px;
+        line-height: 1.25;
+        letter-spacing: 0;
+      }
+
+      .panel-header p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .panel-body {
+        padding: 16px;
+      }
+
+      .field {
+        margin-bottom: 14px;
+      }
+
+      .row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .row > * {
+        flex: 1 1 auto;
+      }
+
+      .row button,
+      .row select {
+        flex: 0 0 auto;
+      }
+
+      .segmentation {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        align-items: end;
+      }
+
+      .segment-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .segment {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      .segment[data-rating="good"] {
+        border-left: 5px solid var(--green);
+      }
+
+      .segment[data-rating="ok"] {
+        border-left: 5px solid var(--amber);
+      }
+
+      .segment[data-rating="bad"] {
+        border-left: 5px solid var(--red);
+      }
+
+      .segment[data-rating="unrated"] {
+        border-left: 5px solid #b6bec9;
+      }
+
+      .segment-head {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 10px;
+        align-items: center;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+        background: #fafbfc;
+      }
+
+      .segment-index {
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        color: var(--muted);
+        font-weight: 700;
+        font-size: 13px;
+      }
+
+      .rating-group {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(58px, auto));
+        gap: 6px;
+        justify-content: start;
+      }
+
+      .rating-button {
+        padding: 0 10px;
+      }
+
+      .rating-button[aria-pressed="true"][data-rate="good"] {
+        border-color: var(--green);
+        background: var(--soft-green);
+        color: var(--green);
+        font-weight: 700;
+      }
+
+      .rating-button[aria-pressed="true"][data-rate="ok"] {
+        border-color: var(--amber);
+        background: var(--soft-amber);
+        color: var(--amber);
+        font-weight: 700;
+      }
+
+      .rating-button[aria-pressed="true"][data-rate="bad"] {
+        border-color: var(--red);
+        background: var(--soft-red);
+        color: var(--red);
+        font-weight: 700;
+      }
+
+      .segment-actions {
+        display: flex;
+        gap: 6px;
+      }
+
+      .icon-button {
+        width: 36px;
+        padding: 0;
+      }
+
+      .segment-body {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .segment-text {
+        min-height: 86px;
+      }
+
+      .note {
+        min-height: 58px;
+      }
+
+      .empty-state {
+        border: 1px dashed #b9c2cc;
+        border-radius: 8px;
+        padding: 20px;
+        color: var(--muted);
+        background: #fbfcfd;
+      }
+
+      .output-box {
+        min-height: 210px;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          monospace;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .check-list {
+        display: grid;
+        gap: 9px;
+        margin: 0 0 14px;
+      }
+
+      .check-list label {
+        display: flex;
+        gap: 8px;
+        align-items: start;
+        margin: 0;
+        font-weight: 500;
+        color: var(--muted);
+      }
+
+      .check-list input {
+        width: auto;
+        margin-top: 4px;
+      }
+
+      .score-bars {
+        display: grid;
+        gap: 7px;
+        margin-bottom: 14px;
+      }
+
+      .score-row {
+        display: grid;
+        grid-template-columns: 48px 1fr 38px;
+        gap: 8px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .bar {
+        height: 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        overflow: hidden;
+        background: #eef1f4;
+      }
+
+      .bar > span {
+        display: block;
+        height: 100%;
+        width: 0;
+        transition: width 160ms ease;
+      }
+
+      .bar.good > span {
+        background: var(--green);
+      }
+
+      .bar.ok > span {
+        background: var(--amber);
+      }
+
+      .bar.bad > span {
+        background: var(--red);
+      }
+
+      .toast {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        z-index: 60;
+        max-width: min(360px, calc(100vw - 36px));
+        padding: 12px 14px;
+        border: 1px solid #b8c3cf;
+        border-radius: 8px;
+        background: #fff;
+        color: var(--ink);
+        box-shadow: 0 10px 26px rgba(20, 30, 45, 0.14);
+        opacity: 0;
+        transform: translateY(10px);
+        pointer-events: none;
+        transition:
+          opacity 160ms ease,
+          transform 160ms ease;
+      }
+
+      .toast.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .footer-note {
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      @media (max-width: 1160px) {
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+
+        .app-header {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .brand {
+          min-width: 0;
+        }
+
+        .metric-strip {
+          width: 100%;
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .rating-group {
+          grid-template-columns: repeat(2, minmax(92px, 1fr));
+        }
+
+        .segment-head {
+          grid-template-columns: auto 1fr;
+        }
+
+        .segment-actions {
+          grid-column: 1 / -1;
+          justify-content: end;
+        }
+
+        .segmentation {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#workspace">跳到工作区</a>
+    <header class="app-header">
+      <div class="brand" aria-label="AI Response Feedback Lab">
+        <div class="brand-mark" aria-hidden="true">RF</div>
+        <div>
+          <h1>AI Response Feedback Lab</h1>
+          <p>逐段标记 AI 回答，生成可执行的改写反馈。</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="metric-strip" aria-label="反馈统计">
+          <div class="metric">
+            <span>片段</span>
+            <strong id="metricTotal">0</strong>
+          </div>
+          <div class="metric">
+            <span>已标记</span>
+            <strong id="metricRated">0</strong>
+          </div>
+          <div class="metric">
+            <span>需重写</span>
+            <strong id="metricBad">0</strong>
+          </div>
+        </div>
+        <button id="saveButton" type="button">保存草稿</button>
+        <button id="exportButton" type="button">下载 JSON</button>
+      </div>
+    </header>
+
+    <main id="workspace">
+      <div class="workspace">
+        <section class="panel" aria-labelledby="inputTitle">
+          <div class="panel-header">
+            <h2 id="inputTitle">输入</h2>
+            <p>粘贴用户问题和 AI 原回答，再按段落或句子拆分。</p>
+          </div>
+          <div class="panel-body">
+            <div class="field">
+              <label for="promptInput">用户原始问题</label>
+              <textarea id="promptInput" placeholder="例如：继续量化交易教学，讲清楚小盘因子的风险来源。"></textarea>
+            </div>
+            <div class="field">
+              <label for="answerInput">AI 原回答</label>
+              <textarea id="answerInput" class="answer-input" placeholder="把需要评价的 AI 回答粘贴到这里。"></textarea>
+            </div>
+            <div class="segmentation">
+              <div>
+                <label for="splitMode">拆分方式</label>
+                <select id="splitMode">
+                  <option value="paragraph">按段落拆分</option>
+                  <option value="sentence">按句子拆分</option>
+                </select>
+              </div>
+              <button id="splitButton" class="primary" type="button">拆分回答</button>
+            </div>
+            <div class="row" style="margin-top: 10px">
+              <button id="sampleButton" type="button">载入示例</button>
+              <button id="addSegmentButton" type="button">新增片段</button>
+              <button id="clearButton" class="danger" type="button">清空</button>
+            </div>
+            <p class="footer-note">数据默认只保存在本机浏览器 localStorage，不上传服务器。</p>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="reviewTitle">
+          <div class="panel-header">
+            <h2 id="reviewTitle">逐段标记</h2>
+            <p>每个片段标为“好 / 一般 / 不好”，再写清楚为什么。</p>
+          </div>
+          <div class="panel-body">
+            <div class="row" style="margin-bottom: 12px">
+              <button id="clearRatingsButton" type="button">清空标记</button>
+              <button id="markUnratedOkButton" type="button">未标记设为一般</button>
+            </div>
+            <div id="segmentList" class="segment-list" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="outputTitle">
+          <div class="panel-header">
+            <h2 id="outputTitle">输出</h2>
+            <p>复制反馈提示词给 AI，让它按你的标注重写。</p>
+          </div>
+          <div class="panel-body">
+            <div class="score-bars" aria-label="评分分布">
+              <div class="score-row">
+                <span>好</span>
+                <div class="bar good"><span id="barGood"></span></div>
+                <strong id="countGood">0</strong>
+              </div>
+              <div class="score-row">
+                <span>一般</span>
+                <div class="bar ok"><span id="barOk"></span></div>
+                <strong id="countOk">0</strong>
+              </div>
+              <div class="score-row">
+                <span>不好</span>
+                <div class="bar bad"><span id="barBad"></span></div>
+                <strong id="countBad">0</strong>
+              </div>
+            </div>
+
+            <div class="check-list" aria-label="改写规则">
+              <label><input id="ruleKeepGood" type="checkbox" checked /> 保留“好”的片段，只做必要压缩。</label>
+              <label><input id="ruleImproveOk" type="checkbox" checked /> 对“一般”的片段补充缺失信息并改清楚。</label>
+              <label><input id="ruleReplaceBad" type="checkbox" checked /> 对“不好”的片段重写，不沿用错误逻辑。</label>
+              <label><input id="ruleAskIfNeeded" type="checkbox" /> 如果关键信息缺失，先向用户提 1 个澄清问题。</label>
+            </div>
+
+            <div class="field">
+              <label for="revisionPrompt">给 AI 的改写提示词</label>
+              <textarea id="revisionPrompt" class="output-box" readonly></textarea>
+              <div class="row" style="margin-top: 8px">
+                <button id="copyPromptButton" class="primary" type="button">复制改写提示词</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="jsonOutput">结构化反馈 JSON</label>
+              <textarea id="jsonOutput" class="output-box" readonly></textarea>
+              <div class="row" style="margin-top: 8px">
+                <button id="copyJsonButton" type="button">复制 JSON</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script>
+      const STORAGE_KEY = "ai-response-feedback-lab:v1";
+
+      const sample = {
+        prompt:
+          "继续量化交易教学，讲清楚为什么小盘股因子可能不是 alpha，而是风险补偿。",
+        answer: `你选 B，方向是对的。更严谨的答案是：B 是第一怀疑对象，但最终要按 D 处理。
+
+小盘股看起来更容易出超额收益，原因可能是信息少、机构覆盖少、流动性差、波动大、容量小。
+
+所以判断一个小盘有效因子，不能只看收益，要按市值分组、看 Rank IC、做市值中性化，并检查坏环境下是否大亏。
+
+这说明所有小盘因子都不能用，最好不要碰小盘股。`
+      };
+
+      const state = {
+        prompt: "",
+        answer: "",
+        splitMode: "paragraph",
+        segments: []
+      };
+
+      const el = {
+        promptInput: document.querySelector("#promptInput"),
+        answerInput: document.querySelector("#answerInput"),
+        splitMode: document.querySelector("#splitMode"),
+        splitButton: document.querySelector("#splitButton"),
+        sampleButton: document.querySelector("#sampleButton"),
+        addSegmentButton: document.querySelector("#addSegmentButton"),
+        clearButton: document.querySelector("#clearButton"),
+        clearRatingsButton: document.querySelector("#clearRatingsButton"),
+        markUnratedOkButton: document.querySelector("#markUnratedOkButton"),
+        segmentList: document.querySelector("#segmentList"),
+        revisionPrompt: document.querySelector("#revisionPrompt"),
+        jsonOutput: document.querySelector("#jsonOutput"),
+        copyPromptButton: document.querySelector("#copyPromptButton"),
+        copyJsonButton: document.querySelector("#copyJsonButton"),
+        exportButton: document.querySelector("#exportButton"),
+        saveButton: document.querySelector("#saveButton"),
+        toast: document.querySelector("#toast"),
+        metricTotal: document.querySelector("#metricTotal"),
+        metricRated: document.querySelector("#metricRated"),
+        metricBad: document.querySelector("#metricBad"),
+        countGood: document.querySelector("#countGood"),
+        countOk: document.querySelector("#countOk"),
+        countBad: document.querySelector("#countBad"),
+        barGood: document.querySelector("#barGood"),
+        barOk: document.querySelector("#barOk"),
+        barBad: document.querySelector("#barBad"),
+        ruleKeepGood: document.querySelector("#ruleKeepGood"),
+        ruleImproveOk: document.querySelector("#ruleImproveOk"),
+        ruleReplaceBad: document.querySelector("#ruleReplaceBad"),
+        ruleAskIfNeeded: document.querySelector("#ruleAskIfNeeded")
+      };
+
+      function uid() {
+        return Math.random().toString(36).slice(2, 9);
+      }
+
+      function showToast(message) {
+        el.toast.textContent = message;
+        el.toast.classList.add("visible");
+        window.clearTimeout(showToast.timer);
+        showToast.timer = window.setTimeout(() => {
+          el.toast.classList.remove("visible");
+        }, 1800);
+      }
+
+      function splitText(text, mode) {
+        const cleaned = text.trim();
+        if (!cleaned) return [];
+        if (mode === "sentence") {
+          return (
+            cleaned
+              .replace(/\r/g, "")
+              .match(/[^。！？!?.\n]+[。！？!?.]?/g) || [cleaned]
+          )
+            .map((part) => part.trim())
+            .filter(Boolean);
+        }
+        return cleaned
+          .replace(/\r/g, "")
+          .split(/\n\s*\n/g)
+          .map((part) => part.trim())
+          .filter(Boolean);
+      }
+
+      function syncInputsToState() {
+        state.prompt = el.promptInput.value;
+        state.answer = el.answerInput.value;
+        state.splitMode = el.splitMode.value;
+      }
+
+      function createSegment(text = "") {
+        return {
+          id: uid(),
+          text,
+          rating: "unrated",
+          note: ""
+        };
+      }
+
+      function labelForRating(rating) {
+        return {
+          good: "好",
+          ok: "一般",
+          bad: "不好",
+          unrated: "未标记"
+        }[rating];
+      }
+
+      function counts() {
+        return state.segments.reduce(
+          (acc, segment) => {
+            acc.total += 1;
+            acc[segment.rating] = (acc[segment.rating] || 0) + 1;
+            if (segment.rating !== "unrated") acc.rated += 1;
+            return acc;
+          },
+          { total: 0, rated: 0, good: 0, ok: 0, bad: 0, unrated: 0 }
+        );
+      }
+
+      function buildRevisionPrompt() {
+        const c = counts();
+        const rules = [];
+        if (el.ruleKeepGood.checked) rules.push("保留标记为“好”的核心表达，只做必要压缩和衔接。");
+        if (el.ruleImproveOk.checked) rules.push("标记为“一般”的片段需要补充遗漏、消除含糊、增强结构。");
+        if (el.ruleReplaceBad.checked) rules.push("标记为“不好”的片段不要沿用原逻辑，应重新判断并重写。");
+        if (el.ruleAskIfNeeded.checked) rules.push("如果关键信息缺失，先向用户提出 1 个最关键的澄清问题。");
+
+        const segmentText = state.segments
+          .map((segment, index) => {
+            const note = segment.note.trim() || "无额外说明";
+            return [
+              `片段 ${index + 1}`,
+              `标记：${labelForRating(segment.rating)}`,
+              `用户意见：${note}`,
+              "原文：",
+              segment.text.trim() || "(空片段)"
+            ].join("\n");
+          })
+          .join("\n\n---\n\n");
+
+        return [
+          "你正在根据逐段反馈修改上一条 AI 回答。",
+          "",
+          "用户原始问题：",
+          state.prompt.trim() || "(未填写)",
+          "",
+          "总体反馈统计：",
+          `共 ${c.total} 个片段，${c.good} 个好，${c.ok} 个一般，${c.bad} 个不好，${c.unrated} 个未标记。`,
+          "",
+          "改写规则：",
+          ...(rules.length ? rules.map((rule, i) => `${i + 1}. ${rule}`) : ["1. 根据逐段标记重写回答。"]),
+          "",
+          "逐段反馈：",
+          segmentText || "(还没有片段)",
+          "",
+          "输出要求：",
+          "1. 直接给出改写后的完整回答。",
+          "2. 不要解释你如何处理标记。",
+          "3. 修复“不好”片段中的问题，同时保留“好”片段的有效信息。",
+          "4. 回答要比原文更清楚、更准确、更贴合用户问题。"
+        ].join("\n");
+      }
+
+      function buildPayload() {
+        return {
+          schema: "ai_response_segment_feedback.v1",
+          created_at: new Date().toISOString(),
+          prompt: state.prompt,
+          source_answer: state.answer,
+          split_mode: state.splitMode,
+          summary: counts(),
+          segments: state.segments.map((segment, index) => ({
+            index: index + 1,
+            text: segment.text,
+            rating: segment.rating,
+            label: labelForRating(segment.rating),
+            note: segment.note
+          })),
+          revision_prompt: buildRevisionPrompt()
+        };
+      }
+
+      function renderMetrics() {
+        const c = counts();
+        const total = Math.max(c.total, 1);
+        el.metricTotal.textContent = String(c.total);
+        el.metricRated.textContent = String(c.rated);
+        el.metricBad.textContent = String(c.bad);
+        el.countGood.textContent = String(c.good);
+        el.countOk.textContent = String(c.ok);
+        el.countBad.textContent = String(c.bad);
+        el.barGood.style.width = `${(c.good / total) * 100}%`;
+        el.barOk.style.width = `${(c.ok / total) * 100}%`;
+        el.barBad.style.width = `${(c.bad / total) * 100}%`;
+      }
+
+      function renderOutputs() {
+        el.revisionPrompt.value = buildRevisionPrompt();
+        el.jsonOutput.value = JSON.stringify(buildPayload(), null, 2);
+      }
+
+      function renderSegments() {
+        el.segmentList.innerHTML = "";
+        if (!state.segments.length) {
+          const empty = document.createElement("div");
+          empty.className = "empty-state";
+          empty.textContent = "还没有片段。先粘贴 AI 回答并点击“拆分回答”。";
+          el.segmentList.append(empty);
+          return;
+        }
+
+        state.segments.forEach((segment, index) => {
+          const article = document.createElement("article");
+          article.className = "segment";
+          article.dataset.rating = segment.rating;
+
+          const head = document.createElement("div");
+          head.className = "segment-head";
+
+          const number = document.createElement("div");
+          number.className = "segment-index";
+          number.textContent = String(index + 1);
+
+          const ratingGroup = document.createElement("div");
+          ratingGroup.className = "rating-group";
+          ratingGroup.setAttribute("role", "group");
+          ratingGroup.setAttribute("aria-label", `片段 ${index + 1} 评分`);
+
+          [
+            ["good", "好"],
+            ["ok", "一般"],
+            ["bad", "不好"],
+            ["unrated", "未标记"]
+          ].forEach(([value, label]) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "rating-button";
+            button.dataset.rate = value;
+            button.textContent = label;
+            button.setAttribute("aria-pressed", String(segment.rating === value));
+            button.addEventListener("click", () => {
+              segment.rating = value;
+              update();
+            });
+            ratingGroup.append(button);
+          });
+
+          const actions = document.createElement("div");
+          actions.className = "segment-actions";
+          [
+            ["↑", "上移", () => moveSegment(index, -1)],
+            ["↓", "下移", () => moveSegment(index, 1)],
+            ["×", "删除", () => deleteSegment(index)]
+          ].forEach(([symbol, title, handler]) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "icon-button";
+            button.textContent = symbol;
+            button.title = title;
+            button.setAttribute("aria-label", `${title}片段 ${index + 1}`);
+            button.addEventListener("click", handler);
+            actions.append(button);
+          });
+
+          head.append(number, ratingGroup, actions);
+
+          const body = document.createElement("div");
+          body.className = "segment-body";
+
+          const textLabel = document.createElement("label");
+          textLabel.textContent = "片段原文";
+          const text = document.createElement("textarea");
+          text.className = "segment-text";
+          text.id = `segment-text-${segment.id}`;
+          textLabel.htmlFor = text.id;
+          text.value = segment.text;
+          text.addEventListener("input", () => {
+            segment.text = text.value;
+            renderOutputs();
+            saveSilent();
+          });
+
+          const noteLabel = document.createElement("label");
+          noteLabel.textContent = "修改意见";
+          const note = document.createElement("textarea");
+          note.className = "note";
+          note.id = `segment-note-${segment.id}`;
+          noteLabel.htmlFor = note.id;
+          note.placeholder = "例如：这一段判断太绝对，需要说明限制条件。";
+          note.value = segment.note;
+          note.addEventListener("input", () => {
+            segment.note = note.value;
+            renderOutputs();
+            saveSilent();
+          });
+
+          body.append(textLabel, text, noteLabel, note);
+          article.append(head, body);
+          el.segmentList.append(article);
+        });
+      }
+
+      function update() {
+        syncInputsToState();
+        renderSegments();
+        renderMetrics();
+        renderOutputs();
+        saveSilent();
+      }
+
+      function saveSilent() {
+        const payload = {
+          prompt: state.prompt,
+          answer: state.answer,
+          splitMode: state.splitMode,
+          segments: state.segments,
+          rules: {
+            keepGood: el.ruleKeepGood.checked,
+            improveOk: el.ruleImproveOk.checked,
+            replaceBad: el.ruleReplaceBad.checked,
+            askIfNeeded: el.ruleAskIfNeeded.checked
+          }
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      }
+
+      function loadSaved() {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return false;
+        try {
+          const saved = JSON.parse(raw);
+          state.prompt = saved.prompt || "";
+          state.answer = saved.answer || "";
+          state.splitMode = saved.splitMode || "paragraph";
+          state.segments = Array.isArray(saved.segments) ? saved.segments : [];
+          el.promptInput.value = state.prompt;
+          el.answerInput.value = state.answer;
+          el.splitMode.value = state.splitMode;
+          if (saved.rules) {
+            el.ruleKeepGood.checked = saved.rules.keepGood !== false;
+            el.ruleImproveOk.checked = saved.rules.improveOk !== false;
+            el.ruleReplaceBad.checked = saved.rules.replaceBad !== false;
+            el.ruleAskIfNeeded.checked = Boolean(saved.rules.askIfNeeded);
+          }
+          return true;
+        } catch {
+          return false;
+        }
+      }
+
+      function moveSegment(index, direction) {
+        const next = index + direction;
+        if (next < 0 || next >= state.segments.length) return;
+        const [item] = state.segments.splice(index, 1);
+        state.segments.splice(next, 0, item);
+        update();
+      }
+
+      function deleteSegment(index) {
+        state.segments.splice(index, 1);
+        update();
+      }
+
+      async function copyText(text, message) {
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast(message);
+        } catch {
+          const helper = document.createElement("textarea");
+          helper.value = text;
+          document.body.append(helper);
+          helper.select();
+          document.execCommand("copy");
+          helper.remove();
+          showToast(message);
+        }
+      }
+
+      function downloadJson() {
+        syncInputsToState();
+        const blob = new Blob([JSON.stringify(buildPayload(), null, 2)], {
+          type: "application/json"
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `ai-response-feedback-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      el.promptInput.addEventListener("input", update);
+      el.answerInput.addEventListener("input", update);
+      el.splitMode.addEventListener("change", update);
+      [el.ruleKeepGood, el.ruleImproveOk, el.ruleReplaceBad, el.ruleAskIfNeeded].forEach((input) => {
+        input.addEventListener("change", update);
+      });
+
+      el.splitButton.addEventListener("click", () => {
+        syncInputsToState();
+        state.segments = splitText(state.answer, state.splitMode).map(createSegment);
+        update();
+        showToast(`已拆分为 ${state.segments.length} 个片段`);
+      });
+
+      el.sampleButton.addEventListener("click", () => {
+        el.promptInput.value = sample.prompt;
+        el.answerInput.value = sample.answer;
+        el.splitMode.value = "paragraph";
+        state.prompt = sample.prompt;
+        state.answer = sample.answer;
+        state.splitMode = "paragraph";
+        state.segments = splitText(sample.answer, "paragraph").map((text, index) => ({
+          ...createSegment(text),
+          rating: ["good", "ok", "ok", "bad"][index] || "unrated",
+          note:
+            [
+              "判断方向准确，可以保留。",
+              "信息有用，但可以补充为什么要用数据验证。",
+              "结构合理，建议增加具体检验指标。",
+              "结论过于绝对；小盘股不是不能碰，而是要识别风险来源和成本。"
+            ][index] || ""
+        }));
+        update();
+        showToast("示例已载入");
+      });
+
+      el.addSegmentButton.addEventListener("click", () => {
+        state.segments.push(createSegment(""));
+        update();
+      });
+
+      el.clearButton.addEventListener("click", () => {
+        if (!confirm("确定清空当前内容？")) return;
+        state.prompt = "";
+        state.answer = "";
+        state.segments = [];
+        el.promptInput.value = "";
+        el.answerInput.value = "";
+        update();
+        showToast("已清空");
+      });
+
+      el.clearRatingsButton.addEventListener("click", () => {
+        state.segments.forEach((segment) => {
+          segment.rating = "unrated";
+        });
+        update();
+      });
+
+      el.markUnratedOkButton.addEventListener("click", () => {
+        state.segments.forEach((segment) => {
+          if (segment.rating === "unrated") segment.rating = "ok";
+        });
+        update();
+      });
+
+      el.copyPromptButton.addEventListener("click", () => {
+        copyText(el.revisionPrompt.value, "已复制改写提示词");
+      });
+
+      el.copyJsonButton.addEventListener("click", () => {
+        copyText(el.jsonOutput.value, "已复制 JSON");
+      });
+
+      el.exportButton.addEventListener("click", downloadJson);
+      el.saveButton.addEventListener("click", () => {
+        syncInputsToState();
+        saveSilent();
+        showToast("草稿已保存到本机浏览器");
+      });
+
+      loadSaved();
+      update();
+    </script>
+  </body>
+</html>
