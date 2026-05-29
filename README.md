@@ -66,6 +66,27 @@ Then open:
 http://127.0.0.1:8787/
 ```
 
+## Browser Extension
+
+The `extension/` folder contains a Manifest V3 browser extension. It injects the
+feedback UI directly into supported AI chat pages:
+
+- ChatGPT,
+- Claude,
+- Gemini,
+- Microsoft Copilot.
+
+Local install:
+
+1. Open `chrome://extensions`.
+2. Enable Developer mode.
+3. Click "Load unpacked".
+4. Select the `extension/` folder.
+5. Open an AI chat page and click "标记回答" under an assistant response.
+
+If automatic message detection fails, select the answer text and click the
+bottom-right "RF 标记" button.
+
 ## Output Schema
 
 The exported JSON uses this rough schema:

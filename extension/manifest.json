@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "AI Response Feedback Lab",
+  "version": "0.2.0",
+  "description": "Mark AI answers segment by segment directly inside ChatGPT, Claude, Gemini, and Copilot.",
+  "permissions": ["storage"],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*",
+        "https://copilot.microsoft.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "AI Response Feedback Lab",
+    "default_popup": "popup.html"
+  }
+}
